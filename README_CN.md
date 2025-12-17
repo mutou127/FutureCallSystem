@@ -113,8 +113,8 @@ Subsystem->FutureCall(this,
 ### 4.2 关键依赖与容错
 构造 `TFutureKey` 时可指定依赖是否为“关键依赖”。
 
-* **关键依赖 (`true`, 默认)**：如果在等待期间 Provider 被销毁（Mid-flight Loss），Ticket 立即失败并触发全局报错。
-* **可选依赖 (`false`)**：如果 Provider 失效，系统会容忍该错误（视具体逻辑可能挂起等待），不会视为致命错误。
+* **关键依赖 (`true`)**：如果在等待期间 Provider 被销毁（Mid-flight Loss），Ticket 立即失败并触发全局报错。
+* **可选依赖 (`false`, 默认)**：如果 Provider 失效，系统会容忍该错误（视具体逻辑可能挂起等待），不会视为致命错误。
 
 ```cpp
 Subsystem->FutureCall(this,
