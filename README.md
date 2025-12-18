@@ -1,6 +1,6 @@
 # FutureCall System (UE Plugin)
 
-[Chinese](https://github.com/slmt123/FutureCallSystem/blob/main/README_CN.md)
+[Chinese](https://github.com/mutou127/FutureCallSystem/blob/main/README_CN.md)
 
 **FutureCall** is an Asynchronous Dependency Resolution System designed for Unreal Engine.
 
