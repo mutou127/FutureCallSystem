@@ -57,11 +57,12 @@ Subsystem->RegisterProvider(this, "Player1");
 **Lambda 方式**：
 ```cpp
 UFutureCallSubsystem* FC = GetGameInstance()->GetSubsystem<UFutureCallSubsystem>();
-
+int32 MyInt = 10;
 FC->FutureCall(this, 
     // 回调函数：参数必须是 UObject* 派生类
-    [](AMyHeroCharacter* Hero){
-        UE_LOG(LogTemp, Log, TEXT("Hero ready: %s"), *Hero->GetName());
+    // 如果回调中需要其余类型的变量，请使用 Lambda 捕获或成员变量的方式获取
+    [MyInt](AMyHeroCharacter* Hero){
+        UE_LOG(LogTemp, Log, TEXT("Hero ready: %s, MyInt is :%d"), *Hero->GetName(), MyInt);
     }, 
     // 依赖声明：类型必须与参数匹配
     TFutureKey<AMyHeroCharacter>(NAME_None)
