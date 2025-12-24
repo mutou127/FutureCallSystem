@@ -24,6 +24,16 @@ Consumer 提交一张 Ticket（FutureCall），声明它依赖的若干 Provider
 * **Loop-safe Delay**：替代原生 Delay 的延时调用方案 (`DelayCall`)，自动绑定 Caller 生命周期，Caller 销毁后自动取消延时回调。
 * **线程友好**：`RegisterProvider` 支持在工作线程调用，内部会 marshal 到 GameThread 安全执行。
 
+### 2.1 系统要求
+
+* **纯蓝图项目**：无需任何操作，即插即用 (Plug and play)。
+* **C++ 项目**：
+    * **UE 5.3 及以上**：引擎默认使用 C++20，**无需配置**。
+    * **UE 4.26 - 5.2**：由于插件头文件包含 C++17 模板特性，您**需要**在主游戏模块的 `Build.cs` 中显式开启 C++17 支持，否则可能产生编译错误：
+```csharp
+// 在您游戏项目的 Build.cs 中添加：
+CppStandard = CppStandardVersion.Cpp17;
+```
 ---
 
 ## 3. 快速开始
@@ -140,6 +150,37 @@ Subsystem->FutureCall(this,
     TFutureKey<AProviderActor>("ServiceC")
 );
 ```
+### 4.4 多态匹配与覆盖策略
+
+FutureCall 支持**多态依赖注入**。这意味着：如果 Ticket 等待的是父类（如 `AWeapon`），而你注册的是子类（如 `APistol`），系统会自动匹配成功。
+
+**覆盖规则**：
+为了解决“当存在多个子类实例时，谁来充当 Provider”的歧义，系统采用以下覆盖策略：
+当 **Tag 相同** 时，如果 **新注册的对象 (New)** 与 **已存在的对象 (Old)** 存在**继承关系**（无论是 `New` 是 `Old` 的子类，还是 `Old` 是 `New` 的子类），**新注册的对象将覆盖旧对象**。
+
+**高风险警告：父类覆盖子类**
+
+假设在设计中存在以下这种情况：
+1. 存在一个`APistol`，`APistol`并不是一个抽象的基类。
+2. 在后续更新中添加了`APistolProMaxUltra`继承自`APistol`
+3. 某个 Ticket 依赖于`APistolProMaxUltra`，在未使用合适的`Tag`进行区分的情况下，一个`APistol`也会触发这个 Ticket。
+4. 该 Ticket 的回调签名使用的是`APistolProMaxUltra* Instance`，此时系统在触发回调时会尝试将一个`APistol* Intance`注入给`APistolProMaxUltra* Instance`。
+5. 这会导致**类型转换失败**，进而导致回调无法执行或产生错误。
+尽管系统允许双向覆盖，但**使用父类实例去覆盖已注册的子类实例**（例如用 `APistol` 覆盖 `APistolProMaxUltra`）是一项**高风险**的操作。
+
+**潜在风险**：
+由于 `UObject` 是所有对象的基类，这就带来了一个潜在风险：
+1. 你先注册了一个基础 `UObject` (Tag="MyData")。
+2. 随后注册了一个 `AActor` (Tag="MyData")。
+3. 由于 `AActor` 是 `UObject` 的子类，系统判定两者存在继承关系，**`AActor` 将直接覆盖掉之前的 `UObject`**。
+4. 此时，如果有 Ticket 专门请求之前的那个 `UObject`，它得到的将是新的 `AActor`（如果类型兼容），可能导致你的游戏逻辑出现问题或断言失败。
+
+**最佳实践**：
+* **在这种案例中 Tag 是区分实例的唯一核心**。
+* 如果你不希望两个对象发生覆盖，**请务必使用不同的 Tag**。
+* 仅当你确实希望“更新”或“替换”同一个逻辑槽位上的对象时（例如：玩家切换了武器，新武器替换旧武器），才使用相同的 Tag 进行注册。
+
+在这种涉及具体类继承的场景下，请**仔细审视您的架构设计**，确认这种覆盖行为是否符合预期。
 
 ---
 
